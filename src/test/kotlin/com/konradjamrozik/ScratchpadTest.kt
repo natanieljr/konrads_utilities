@@ -5,21 +5,16 @@ package com.konradjamrozik
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.io.StringWriter
 
-@RunWith(JUnit4)
- class ScratchpadTest
-{
+@RunWith(JUnit4::class)
+ class ScratchpadTest {
 
   @Test
-  void "test"()
-  {
-    def sw = new StringWriter()
-    sw.withWriter {wr ->
-
-      wr.write("widgets ")
-
-    }
-    println sw.toString()
+  fun `test`() {
+    val sw = StringWriter()
+    sw.write("widgets ")
+    println(sw.toString())
   }
 }
 

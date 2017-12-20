@@ -35,3 +35,15 @@ fun String.removeColumn(column: Int): String {
     columns.filterIndexed { index, _ -> index+1 != column }.joinToString(separator = "")
   }.joinToString(separator = "\n")
 }
+
+fun String.truncate(max: Int): String {
+  val msg = "...(trunc.)"
+  assert(max > msg.length)
+
+  return if (this.length > max) {
+    val truncatedSelf = this.take(max - msg.length) + msg
+    assert(truncatedSelf.length <= max)
+    truncatedSelf
+  } else
+    this
+}

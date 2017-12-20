@@ -3,6 +3,8 @@
 package com.konradjamrozik
 
 import com.google.common.base.Objects
+import java.io.IOException
+import java.net.URL
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -54,51 +56,43 @@ import java.nio.file.Paths
  *
  * </p>
  */
-class ResourcePath
-{
+class ResourcePath(pathString: String) {
+    val url: URL
+    val alternativeUrls: List<URL>
 
-  @Delegate
-  Path path
+    /**
+     * Please see the class doc.
+     */
+    init {
+        val urlsEnum = ClassLoader.getSystemResources(pathString)
+        if (!urlsEnum.hasMoreElements())
+            throw IOException("No resource URL found for path $pathString")
 
-  URL url
+        val urls = urlsEnum.toList()
+        val nonJarUrl = urls.find { it.toString().startsWith("file:") }
+        if (nonJarUrl == null) {
+            val urlsString = urls.joinToString("\n") { it.toString() }
+            throw IOException("No URL found for path $pathString that starts with 'file' protocol. The found URLs:\n$urlsString")
+        }
 
-  List<URL> alternativeUrls
+        val path = Paths.get(nonJarUrl.toURI())
 
-  /**
-   * Please see the class doc.
-   */
-  public ResourcePath(String pathString) throws IOException
-  {
-    Enumeration<URL> urlsEnum = ClassLoader.getSystemResources(pathString)
-    if (!urlsEnum.hasMoreElements())
-      throw new IOException("No resource URL found for path $pathString")
+        if (!(path.isRegularFile || path.isDirectory))
+            throw IOException("Resource named '$path' is not a regular file nor a directory.\n" +
+                    "Path to the resource: ${path.toAbsolutePath()}")
 
-    List<URL> urls = urlsEnum.collect()
-    URL nonJarUrl = urls.find { it.toString().startsWith("file:")} as URL
-    if (nonJarUrl == null)
-    {
-      String urlsString = urls.collect { it.toString() }.join("\n")
-      throw new IOException("No URL found for path $pathString that starts with 'file' protocol. The found URLs:\n$urlsString")
+        this.url = nonJarUrl
+        this.alternativeUrls = urls - nonJarUrl
     }
 
-    Path path = Paths.get(nonJarUrl.toURI())
-    
-    if (!(path.isRegularFile() || path.isDirectory()))
-      throw new IOException("Resource named '$path' is not a regular file nor a directory.\n" +
-        "Path to the resource: ${path.toAbsolutePath()}")
+    val path: Path
+        get() = Paths.get(this.url.toURI())
 
-    this.url = nonJarUrl
-    this.alternativeUrls = urls - nonJarUrl
-    this.path = path
-  }
-
-  @Override
-  public String toString()
-  {
-    return Objects.toStringHelper(this)
-      .add("path", path)
-      .add("url", url)
-      .add("alternativeUrls", alternativeUrls)
-      .toString();
-  }
+    override fun toString(): String {
+        return Objects.toStringHelper(this)
+                .add("path", path)
+                .add("url", url)
+                .add("alternativeUrls", alternativeUrls)
+                .toString();
+    }
 }

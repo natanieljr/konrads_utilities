@@ -66,3 +66,60 @@ fun <K, V> Iterable<Map<K, Iterable<V>>>.flatten(): Map<K, Iterable<V>> {
   }
   return multimap.asMap()
 }
+
+fun <T> Iterable<T>.truncateAndPrint(max: Int): String {
+  var out = this.take(max).joinToString("\n") { it.toString() }
+  val count = this.count()
+  if (count > max) {
+    val remainder = count - max
+    assert(remainder > 0)
+    val msg = "...(left out $remainder items)"
+    out += "\n" + msg
+  }
+
+  return out
+}
+
+fun <T> Iterable<T>.findSingle(closure: (T) -> Boolean): T {
+  return single { closure.invoke(it) }
+}
+
+fun <T> Iterable<T>.findSingle(): T {
+  assert(this.count() == 1)
+  return this.first()
+}
+
+fun <T> Iterable<T>.findSingleOrDefault(defaultVal: T): T {
+  assert(this.count() <= 1)
+
+  return if (this.count() == 1)
+    this.first()
+  else
+    defaultVal
+}
+
+fun <T> Iterable<T>.findSingleOrDefault(defaultVal: T, closure: (T) -> Boolean): T {
+  val result = this.filter { closure(it) }
+  return result.findSingleOrDefault(defaultVal)
+}
+
+fun <T> Iterable<T>.noDuplicates(): Boolean {
+  return this.count() == this.distinct().count()
+}
+
+fun <T> Iterable<T>.allUnique(): Boolean {
+  return this.noDuplicates()
+}
+
+fun <T> Iterable<T>.isSubset(right: Iterable<T>): Boolean {
+  assert(this.noDuplicates())
+  assert(right.noDuplicates())
+
+  val intersectionSet = this.intersect(right)
+
+  return this as Set == intersectionSet
+}
+
+fun <T> Iterable<Iterable<T>>.shallowFlatten(): List<T> {
+  return this.flatten()
+}

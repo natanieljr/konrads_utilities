@@ -2,7 +2,7 @@
 
 package com.konradjamrozik
 
-import org.codehaus.groovy.runtime.NioGroovyMethods
+import org.apache.commons.io.FilenameUtils
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -82,7 +82,7 @@ fun Path.createFileAndParentDirsIfNecessary() {
 
 fun Path.writeText(text: String) {
   check(this.isRegularFile)
-  NioGroovyMethods.write(this, text)
+    Files.write(this, text.toByteArray())
 }
 
 fun Path.createWithTextCreatingParentDirsIfNecessary(text: String) {
@@ -109,7 +109,7 @@ fun Path.replaceText(sourceText: String, replacementText: String) {
 val Path.text: String
   get() {
     check(this.isRegularFile)
-    return NioGroovyMethods.getText(this)
+    return Files.readAllLines(this).joinToString("\n")
   }
 
 val Path.allFilesTexts: Iterable<String>
@@ -120,4 +120,22 @@ val Path.allFilesTexts: Iterable<String>
 
 fun Path.printFileNames() {
   this.files.forEach { println(it.fileName) }
+}
+
+
+fun Path.getExtension(): String {
+  return FilenameUtils.getExtension(this.fileName.toString())
+}
+
+fun Path.copyDirRecursivelyToDirInDifferentFileSystem(destDir: Path)
+{
+  FileSystemsOperations().copyDirRecursivelyToDirInDifferentFileSystem(this, destDir)
+}
+
+fun Path.copyDirContentsRecursivelyToDirInDifferentFileSystem(destDir: Path) {
+  FileSystemsOperations().copyDirContentsRecursivelyToDirInDifferentFileSystem(this, destDir)
+}
+
+fun List<Path>.copyFilesToDirInDifferentFileSystem(destDir: Path) {
+  FileSystemsOperations().copyFilesToDirInDifferentFileSystem(this, destDir)
 }
