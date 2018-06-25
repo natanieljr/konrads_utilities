@@ -2,7 +2,6 @@
 
 package com.konradjamrozik
 
-import java.io.File
 import java.io.IOException
 import java.net.JarURLConnection
 import java.net.URL
@@ -32,33 +31,33 @@ class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: B
   }
 
   val url: URL by lazy {
-    check(!allowAmbiguity, { "check failed: !allowAmbiguity" })
+    check(!allowAmbiguity) { "check failed: !allowAmbiguity" }
     urls.single()
   }
 
   val path: Path by lazy {
-    check(url.protocol == "file", {
+    check(url.protocol == "file") {
       "cannot get path on a resource whose protocol is not 'file'. " +
-        "The protocol is instead '${urls.single().protocol}'"
-    })
+              "The protocol is instead '${urls.single().protocol}'"
+    }
     Paths.get(urls.single().toURI())
   }
 
-  val file: File by lazy {
-    check(!allowAmbiguity, { "check failed: !allowAmbiguity" })
-    File(url.toURI())
+  val file: Path by lazy {
+    check(!allowAmbiguity) { "check failed: !allowAmbiguity" }
+    Paths.get(url.toURI())
   }
 
   private fun copyBesideContainer(url: URL): Path {
 
     val jarUrlConnection = url.openConnection() as JarURLConnection
-    val jarFile = File(jarUrlConnection.jarFileURL.toURI())
+    val jarFile = Paths.get(jarUrlConnection.jarFileURL.toURI())
     // Example jarFile: C:\my\local\repos\github\utilities\build\resources\test\toplevel.jar
     val jarDir = jarFile.parent
     // Example jarDir: C:\my\local\repos\github\utilities\build\resources\test
     val jarEntry = jarUrlConnection.jarEntry.toString()
     // Example jarEntry: nested.jar
-    val targetPath = Paths.get(jarDir, jarEntry)
+    val targetPath = jarDir.resolve(jarEntry)
     // Example targetPath: C:\my\local\repos\github\utilities\build\resources\test\nested.jar
     Files.copy(url.openStream(), targetPath)
     return targetPath
@@ -74,8 +73,8 @@ class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: B
 
       extractedPath.block()
 
-      check (extractedPath.isRegularFile,
-        { ("Failure: extracted path $extractedPath has been deleted while being processed in the 'withExtractedPath' block.") })
+      check (extractedPath.isRegularFile
+      ) { ("Failure: extracted path $extractedPath has been deleted while being processed in the 'withExtractedPath' block.") }
 
       Files.delete(extractedPath)
     }
