@@ -12,85 +12,89 @@ import java.nio.file.StandardCopyOption
 
 class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: Boolean = false) {
 
-  val urls: List<URL> = {
+	val urls: List<URL> = {
 
-    val urls = ClassLoader.getSystemResources(name).toList()
-    
-    if (urls.isEmpty())
-      throw IOException("No resource URLs found for path \"$name\"")
-    
-    if (!allowAmbiguity && urls.size > 1)
-      throw IOException("More than one resource URL found for path $name. " +
-        "The found URLs:\n${urls.joinToString(separator = "\n")}")
-    
-    urls
-  }()
+		val urls = ClassLoader.getSystemResources(name).toList()
 
-  val text: String by lazy {
-    url.text
-  }
+		if (urls.isEmpty())
+			throw IOException("No resource URLs found for path \"$name\"")
 
-  val url: URL by lazy {
-    check(!allowAmbiguity) { "check failed: !allowAmbiguity" }
-    urls.single()
-  }
+		if (!allowAmbiguity && urls.size > 1)
+			throw IOException("More than one resource URL found for path $name. " +
+					"The found URLs:\n${urls.joinToString(separator = "\n")}")
 
-  val path: Path by lazy {
-    check(url.protocol == "file") {
-      "cannot get path on a resource whose protocol is not 'file'. " +
-              "The protocol is instead '${urls.single().protocol}'"
-    }
-    Paths.get(urls.single().toURI())
-  }
+		urls
+	}()
 
-  val file: Path by lazy {
-    check(!allowAmbiguity) { "check failed: !allowAmbiguity" }
-    Paths.get(url.toURI())
-  }
+	val text: String by lazy {
+		url.text
+	}
 
-  private fun copyBesideContainer(url: URL): Path {
+	val url: URL by lazy {
+		check(!allowAmbiguity) { "check failed: !allowAmbiguity" }
+		urls.single()
+	}
 
-    val jarUrlConnection = url.openConnection() as JarURLConnection
-    val jarFile = Paths.get(jarUrlConnection.jarFileURL.toURI())
-    // Example jarFile: C:\my\local\repos\github\utilities\build\resources\test\toplevel.jar
-    val jarDir = jarFile.parent
-    // Example jarDir: C:\my\local\repos\github\utilities\build\resources\test
-    val jarEntry = jarUrlConnection.jarEntry.toString()
-    // Example jarEntry: nested.jar
-    val targetPath = jarDir.resolve(jarEntry)
-    // Example targetPath: C:\my\local\repos\github\utilities\build\resources\test\nested.jar
-    Files.copy(url.openStream(), targetPath)
-    return targetPath
-  }
+	val path: Path by lazy {
+		when {
+			url.protocol == "jar" -> {
+				val connection = url.openConnection() as JarURLConnection
+				Paths.get(connection.jarFileURL.toURI())
+			}
+			url.protocol == "file" -> Paths.get(urls.single().toURI())
+			else -> error("cannot get path on a resource whose protocol is not 'file'. " +
+					"The protocol is instead '${urls.single().protocol}'")
+		}
+	}
 
-  fun withExtractedPath(block: Path.() -> Unit) {
+	val file: Path by lazy {
+		check(!allowAmbiguity) { "check failed: !allowAmbiguity" }
+		Paths.get(url.toURI())
+	}
 
-    if (url.protocol == "file")
-      Paths.get(url.toURI()).block()
-    else {
+	private fun copyBesideContainer(url: URL): Path {
 
-      val extractedPath = copyBesideContainer(url)
+		val jarUrlConnection = url.openConnection() as JarURLConnection
+		val jarFile = Paths.get(jarUrlConnection.jarFileURL.toURI())
+		// Example jarFile: C:\my\local\repos\github\utilities\build\resources\test\topLevel.jar
+		val jarDir = jarFile.parent
+		// Example jarDir: C:\my\local\repos\github\utilities\build\resources\test
+		val jarEntry = jarUrlConnection.jarEntry.toString()
+		// Example jarEntry: nested.jar
+		val targetPath = jarDir.resolve(jarEntry)
+		// Example targetPath: C:\my\local\repos\github\utilities\build\resources\test\nested.jar
+		Files.copy(url.openStream(), targetPath)
+		return targetPath
+	}
 
-      extractedPath.block()
+	fun withExtractedPath(block: Path.() -> Unit) {
 
-      check (extractedPath.isRegularFile
-      ) { ("Failure: extracted path $extractedPath has been deleted while being processed in the 'withExtractedPath' block.") }
+		if (url.protocol == "file")
+			Paths.get(url.toURI()).block()
+		else {
 
-      Files.delete(extractedPath)
-    }
-  }
+			val extractedPath = copyBesideContainer(url)
 
-  fun extractTo(targetDir: Path): Path {
-    
-    val targetFile = if (url.protocol == "file") {
-      targetDir.resolve(name)
-    } else {
-      val jarUrlConnection = url.openConnection() as JarURLConnection
-      targetDir.resolve(jarUrlConnection.jarEntry.toString())
-    }
+			extractedPath.block()
 
-    targetFile.mkdirs()
-    Files.copy(url.openStream(), targetFile, StandardCopyOption.REPLACE_EXISTING)
-    return targetFile
-  }
+			check(extractedPath.isRegularFile
+			) { ("Failure: extracted path $extractedPath has been deleted while being processed in the 'withExtractedPath' block.") }
+
+			Files.delete(extractedPath)
+		}
+	}
+
+	fun extractTo(targetDir: Path): Path {
+
+		val targetFile = if (url.protocol == "file") {
+			targetDir.resolve(name)
+		} else {
+			val jarUrlConnection = url.openConnection() as JarURLConnection
+			targetDir.resolve(jarUrlConnection.jarEntry.toString())
+		}
+
+		targetFile.mkdirs()
+		Files.copy(url.openStream(), targetFile, StandardCopyOption.REPLACE_EXISTING)
+		return targetFile
+	}
 }
