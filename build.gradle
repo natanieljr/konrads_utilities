@@ -16,7 +16,7 @@ plugins {
 ext.kotlin_version = '1.2.51'
 
 group 'com.github.konrad-jamrozik'
-version '0.2.3'
+version '0.2.4'
 
 apply plugin: 'kotlin'
 apply plugin: 'maven'
@@ -71,7 +71,7 @@ List<File> jarNamesInBuiltResourcesDir() {
           new FilenameFilter() {
             @Override
             boolean accept(File dir, String name) {
-              return (new File(dir, name).isFile()) && name.endsWith(".jar");
+              return (new File(dir, name).isFile()) && name.endsWith(".jar")
             }
           })
 
