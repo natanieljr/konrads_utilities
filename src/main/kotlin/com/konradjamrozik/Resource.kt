@@ -91,12 +91,12 @@ class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: B
 		}
 
 		if (asDirectory) {
-			Files.createDirectories(targetFile)
+			targetFile.mkdirs()
 			Files.createDirectory(targetFile)
 			FileSystemsOperations().copyDirContentsRecursivelyToDirInSameFileSystem(Paths.get(url.toURI()), targetFile)
 		}
 		else {
-			Files.createDirectories(targetFile)
+			targetFile.mkdirs()
 			Files.copy(url.openStream(), targetFile, StandardCopyOption.REPLACE_EXISTING)
 		}
 
