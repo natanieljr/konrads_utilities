@@ -90,11 +90,15 @@ class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: B
 			targetDir.resolve(jarUrlConnection.jarEntry.toString())
 		}
 
-		targetFile.mkdirs()
-		if (asDirectory)
+		if (asDirectory) {
+			Files.createDirectories(targetFile)
+			Files.createDirectory(targetFile)
 			FileSystemsOperations().copyDirContentsRecursivelyToDirInSameFileSystem(Paths.get(url.toURI()), targetFile)
-		else
+		}
+		else {
+			Files.createDirectories(targetFile)
 			Files.copy(url.openStream(), targetFile, StandardCopyOption.REPLACE_EXISTING)
+		}
 
 		return targetFile
 	}
