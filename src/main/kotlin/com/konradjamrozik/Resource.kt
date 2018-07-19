@@ -5,10 +5,7 @@ package com.konradjamrozik
 import java.io.IOException
 import java.net.JarURLConnection
 import java.net.URL
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
+import java.nio.file.*
 
 class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: Boolean = false) {
 
@@ -84,8 +81,8 @@ class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: B
 		}
 	}
 
-	fun extractTo(targetDir: Path): Path {
-
+	@JvmOverloads
+	fun extractTo(targetDir: Path, asDirectory: Boolean = false): Path {
 		val targetFile = if (url.protocol == "file") {
 			targetDir.resolve(name)
 		} else {
@@ -94,7 +91,11 @@ class Resource @JvmOverloads constructor(val name: String, val allowAmbiguity: B
 		}
 
 		targetFile.mkdirs()
-		Files.copy(url.openStream(), targetFile, StandardCopyOption.REPLACE_EXISTING)
+		if (asDirectory)
+			FileSystemsOperations().copyDirContentsRecursivelyToDirInSameFileSystem(Paths.get(url.toURI()), targetFile)
+		else
+			Files.copy(url.openStream(), targetFile, StandardCopyOption.REPLACE_EXISTING)
+
 		return targetFile
 	}
 }
